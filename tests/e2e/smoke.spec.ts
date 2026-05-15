@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test.describe("landing page", () => {
-  test("renders the hero", async ({ page }) => {
+  test("renders the empty-state hero after hydration", async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on("console", (msg) => {
       if (msg.type() === "error") consoleErrors.push(msg.text());
@@ -34,5 +34,26 @@ test.describe("landing page", () => {
     expect(res.headers()["x-content-type-options"]).toBe("nosniff");
     expect(res.headers()["referrer-policy"]).toBe("strict-origin-when-cross-origin");
     expect(res.headers()["x-frame-options"]).toBe("DENY");
+  });
+
+  test("hydrates the persistence layer in a real browser", async ({ page }) => {
+    await page.goto("/");
+    // The empty-state CTA only appears after the client component
+    // mounts AND `listProjects()` resolves. So a visible CTA proves
+    // IndexedDB opened without error in the real browser.
+    await expect(page.getByRole("link", { name: /create your first carousel/i })).toBeVisible();
+
+    const ok = await page.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          const req = indexedDB.open("folio");
+          req.onsuccess = () => {
+            req.result.close();
+            resolve(true);
+          };
+          req.onerror = () => resolve(false);
+        }),
+    );
+    expect(ok).toBe(true);
   });
 });
