@@ -26,9 +26,10 @@ test.describe("project lifecycle", () => {
     await expect(card).toBeVisible();
     await card.click();
 
-    // Lands on the editor placeholder for the newly created project.
+    // Lands on the editor for the newly created project. URL match
+    // and a top-bar control prove the shell mounted.
     await expect(page).toHaveURL(/\/editor\/[0-9a-f-]+/i);
-    await expect(page.getByRole("heading", { level: 1 })).toContainText(/untitled/i);
+    await expect(page.getByRole("button", { name: /fit to viewport/i })).toBeVisible();
 
     // Go back to projects.
     await page.getByRole("button", { name: /back to projects/i }).click();
