@@ -1,10 +1,14 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { CanvasStage } from "./canvas-stage";
+import { TextEditOverlay } from "./text-edit-overlay";
 import { useEditorStore } from "@/state/editor-store";
 import { fitTransform } from "@/lib/canvas/viewport-math";
 import { getPreset } from "@/lib/presets/presets";
+import { useAddElement } from "./use-add-element";
+import { ImageImportError, isAcceptedImageMime } from "@/lib/canvas/image-import";
+import { useToast } from "@/components/providers/toast-provider";
 
 export interface CanvasViewportHandle {
   fitToViewport: () => void;
@@ -14,24 +18,20 @@ interface CanvasViewportProps {
   registerHandle?: (handle: CanvasViewportHandle) => void;
 }
 
-/**
- * Host for the Konva Stage. Tracks its own DOM size via
- * ResizeObserver and exposes a `fitToViewport` action so the
- * top-bar can reset zoom + pan.
- */
 export function CanvasViewport({ registerHandle }: CanvasViewportProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [size, setSize] = useState<{ width: number; height: number } | null>(null);
+  const [dropActive, setDropActive] = useState(false);
 
   const project = useEditorStore((s) => s.project);
   const setView = useEditorStore((s) => s.setView);
+  const { addImageFromFile } = useAddElement();
+  const { toast } = useToast();
 
-  // Track container size with ResizeObserver.
   useLayoutEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     setSize({ width: el.clientWidth, height: el.clientHeight });
-
     const obs = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
@@ -42,8 +42,6 @@ export function CanvasViewport({ registerHandle }: CanvasViewportProps) {
     return () => obs.disconnect();
   }, []);
 
-  // Fit on first sizing + project load, and when the project's
-  // dimensions change.
   useEffect(() => {
     if (!project || !size) return;
     const preset = getPreset(project.presetId);
@@ -54,7 +52,6 @@ export function CanvasViewport({ registerHandle }: CanvasViewportProps) {
     setView(fitTransform(canvas, size));
   }, [project?.id, project?.slideCount, project?.presetId, size, project, setView]);
 
-  // Expose imperative fit.
   useEffect(() => {
     if (!registerHandle) return;
     registerHandle({
@@ -71,16 +68,68 @@ export function CanvasViewport({ registerHandle }: CanvasViewportProps) {
     });
   }, [registerHandle, project, setView]);
 
+  const onDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (Array.from(e.dataTransfer.items ?? []).some((i) => i.kind === "file")) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "copy";
+      setDropActive(true);
+    }
+  }, []);
+
+  const onDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    if (e.currentTarget === e.target) setDropActive(false);
+  }, []);
+
+  const onDrop = useCallback(
+    async (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setDropActive(false);
+      const file = Array.from(e.dataTransfer.files).find((f) => isAcceptedImageMime(f.type));
+      if (!file) {
+        toast({
+          title: "Unsupported file",
+          description: "Drop a JPEG, PNG, WebP, or HEIC image.",
+          variant: "danger",
+        });
+        return;
+      }
+      try {
+        await addImageFromFile(file);
+      } catch (err) {
+        toast({
+          title: "Couldn't add image",
+          description:
+            err instanceof ImageImportError
+              ? err.message
+              : err instanceof Error
+                ? err.message
+                : "Unknown error",
+          variant: "danger",
+        });
+      }
+    },
+    [addImageFromFile, toast],
+  );
+
   return (
     <div
       ref={containerRef}
-      // touch-action: none lets us own pinch + swipe gestures.
-      // overflow-hidden keeps Konva's positioned children from
-      // creating scrollbars.
       className="relative min-h-0 flex-1 overflow-hidden bg-(--color-canvas-bg)"
       style={{ touchAction: "none" }}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
     >
       {size ? <CanvasStage viewport={size} /> : null}
+      <TextEditOverlay />
+      {dropActive ? (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-4 flex items-center justify-center rounded-md border-2 border-dashed border-(--color-accent) bg-(--color-canvas-bg)/40 text-sm text-(--color-foreground-muted)"
+        >
+          Drop image to add
+        </div>
+      ) : null}
     </div>
   );
 }

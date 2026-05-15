@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useRef } from "react";
+import { useCallback, useMemo, useRef } from "react";
 import type Konva from "konva";
 import { Layer, Line, Rect, Stage } from "react-konva";
+import type { Background } from "@/lib/db/schema";
 import { useEditorStore } from "@/state/editor-store";
 import { getPreset } from "@/lib/presets/presets";
 import { zoomAtPoint, zoomFactorFromWheelDeltaY } from "@/lib/canvas/viewport-math";
+import { ContentLayer } from "./content-layer";
 
 interface CanvasStageProps {
   viewport: { width: number; height: number };
@@ -54,15 +56,24 @@ export function CanvasStage({ viewport }: CanvasStageProps) {
     [setPan],
   );
 
+  const setEditingTextId = useEditorStore((s) => s.setEditingTextId);
+  const handleDblClick = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      const id = e.target?.id?.();
+      if (!id) return;
+      const el = useEditorStore.getState().project?.elements.find((x) => x.id === id);
+      if (el?.kind === "text") setEditingTextId(id);
+    },
+    [setEditingTextId],
+  );
+
   if (!project) return null;
   const preset = getPreset(project.presetId);
   const slideW = preset.exportWidth;
   const slideH = preset.exportHeight;
   const totalW = slideW * project.slideCount;
 
-  const bg = project.background.kind === "solid" ? project.background.color : "#0B0B0F";
-
-  // The pan/zoom modifier (space) makes the entire stage draggable.
+  // Pan/zoom modifier (space) makes the entire stage draggable.
   // When false, only elements inside the stage are draggable (Phase 6+).
   const draggable = isPanModifierHeld;
 
@@ -80,13 +91,15 @@ export function CanvasStage({ viewport }: CanvasStageProps) {
       draggable={draggable}
       onWheel={handleWheel}
       onDragEnd={handleDragEnd}
+      onDblClick={handleDblClick}
+      onDblTap={handleDblClick}
       style={{ cursor: draggable ? "grabbing" : "default" }}
     >
       <Layer listening={false}>
-        <Rect x={0} y={0} width={totalW} height={slideH} fill={bg} cornerRadius={0} />
+        <BackgroundRect width={totalW} height={slideH} background={project.background} />
       </Layer>
 
-      <Layer listening={false}>{/* Content layer — populated in Phase 5. */}</Layer>
+      <ContentLayer elements={project.elements} />
 
       <Layer listening={false}>
         <SlideBoundaries slideCount={project.slideCount} slideWidth={slideW} slideHeight={slideH} />
@@ -121,6 +134,46 @@ function SlideBoundaries({
     );
   }
   return <>{lines}</>;
+}
+
+function BackgroundRect({
+  width,
+  height,
+  background,
+}: {
+  width: number;
+  height: number;
+  background: Background;
+}) {
+  const gradient = useMemo(() => {
+    if (background.kind !== "gradient") return null;
+    const { stops, angle } = background;
+    const rad = (angle * Math.PI) / 180;
+    const dx = Math.cos(rad);
+    const dy = Math.sin(rad);
+    const half = Math.max(width, height);
+    return {
+      start: { x: width / 2 - dx * half, y: height / 2 - dy * half },
+      end: { x: width / 2 + dx * half, y: height / 2 + dy * half },
+      stops: stops.flatMap((s) => [s.offset, s.color]) as (string | number)[],
+    };
+  }, [background, width, height]);
+
+  if (background.kind === "solid") {
+    return <Rect x={0} y={0} width={width} height={height} fill={background.color} />;
+  }
+  if (!gradient) return null;
+  return (
+    <Rect
+      x={0}
+      y={0}
+      width={width}
+      height={height}
+      fillLinearGradientStartPoint={gradient.start}
+      fillLinearGradientEndPoint={gradient.end}
+      fillLinearGradientColorStops={gradient.stops}
+    />
+  );
 }
 
 function CanvasFrame({ width, height }: { width: number; height: number }) {

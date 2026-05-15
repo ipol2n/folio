@@ -5,6 +5,7 @@ import { ArrowLeft, Maximize2, Minus, Plus } from "lucide-react";
 import { useEditorStore } from "@/state/editor-store";
 import { cn } from "@/lib/utils";
 import { clampZoom } from "@/lib/canvas/viewport-math";
+import { BackgroundButton } from "./background-button";
 
 interface TopBarProps {
   onFit: () => void;
@@ -36,6 +37,8 @@ export function TopBar({ onFit }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-1">
+        <BackgroundButton />
+        <div className="mx-1 h-5 w-px bg-(--color-canvas-border)" aria-hidden />
         <ZoomButton label="Zoom out" onClick={() => setScale(clampZoom(scale * 0.8))}>
           <Minus aria-hidden className="h-4 w-4" />
         </ZoomButton>
