@@ -1,0 +1,29 @@
+{
+  "name": "Folio — Carousel & collage maker",
+  "short_name": "Folio",
+  "description": "Design seamless multi-slide social-media carousels. Free, offline-capable, installable.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "theme_color": "#0B0B0F",
+  "background_color": "#0B0B0F",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-mask-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

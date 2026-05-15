@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  /* Brand palette — dark-first per design */
+  --color-canvas-bg: oklch(0.18 0.01 280);
+  --color-canvas-surface: oklch(0.22 0.012 280);
+  --color-canvas-elevated: oklch(0.26 0.013 280);
+  --color-canvas-border: oklch(0.32 0.015 280);
+
+  --color-foreground: oklch(0.97 0.005 280);
+  --color-foreground-muted: oklch(0.75 0.01 280);
+  --color-foreground-subtle: oklch(0.55 0.012 280);
+
+  --color-accent: oklch(0.74 0.18 295);
+  --color-accent-strong: oklch(0.68 0.2 295);
+  --color-accent-foreground: oklch(0.16 0.02 295);
+
+  --color-danger: oklch(0.7 0.2 25);
+  --color-success: oklch(0.78 0.15 155);
+
+  /* Type scale */
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Motion */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@layer base {
+  html,
+  body {
+    height: 100%;
+    background-color: var(--color-canvas-bg);
+    color: var(--color-foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Disable iOS tap highlight; we manage our own focus rings. */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Prevent the canvas wrapper (added later) from triggering native gestures.
+     Safe to apply at the root for an editor app. */
+  body {
+    overscroll-behavior: none;
+  }
+}

@@ -1,0 +1,57 @@
+import type { Metadata, Viewport } from "next";
+import "./globals.css";
+import { ToastProvider } from "@/components/providers/toast-provider";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { Header } from "@/components/shell/header";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Folio — Carousel & collage maker",
+    template: "%s · Folio",
+  },
+  description:
+    "Folio is a free, client-side web app for creating seamless multi-slide social-media carousels. Works offline. Install to your home screen.",
+  applicationName: "Folio",
+  manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    title: "Folio",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    icon: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+  },
+  formatDetection: {
+    telephone: false,
+    email: false,
+    address: false,
+  },
+  robots: { index: true, follow: true },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#0B0B0F",
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: "cover",
+  colorScheme: "dark",
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" data-theme="dark" suppressHydrationWarning>
+      <body className="bg-canvas-bg text-foreground min-h-screen antialiased">
+        <ThemeProvider>
+          <ToastProvider>
+            <div className="flex min-h-screen flex-col">
+              <Header />
+              <main className="flex-1">{children}</main>
+            </div>
+          </ToastProvider>
+        </ThemeProvider>
+      </body>
+    </html>
+  );
+}
