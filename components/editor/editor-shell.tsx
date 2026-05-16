@@ -9,6 +9,7 @@ import { CanvasViewport, type CanvasViewportHandle } from "./canvas-viewport";
 import { TopBar } from "./top-bar";
 import { SidebarRail } from "./sidebar-rail";
 import { InspectorPanel } from "./inspector-panel";
+import { MobileInspectorSheet } from "./mobile-inspector-sheet";
 import { SlideStrip } from "./slide-strip";
 
 interface EditorShellProps {
@@ -21,6 +22,8 @@ export function EditorShell({ projectId }: EditorShellProps) {
   const loadProject = useEditorStore((s) => s.loadProject);
   const closeProject = useEditorStore((s) => s.closeProject);
   const setPanModifierHeld = useEditorStore((s) => s.setPanModifierHeld);
+  const setSelection = useEditorStore((s) => s.setSelection);
+  const removeElement = useEditorStore((s) => s.removeElement);
 
   const viewportHandleRef = useRef<CanvasViewportHandle | null>(null);
   const registerHandle = useCallback((handle: CanvasViewportHandle) => {
@@ -33,28 +36,61 @@ export function EditorShell({ projectId }: EditorShellProps) {
     return () => closeProject();
   }, [projectId, loadProject, closeProject]);
 
-  // Space key holds the pan modifier so the canvas becomes draggable.
-  // Ignore keystrokes while the user is typing into an input.
+  // Editor keyboard shortcuts. Skipped when the user is typing into a
+  // form field; the text-edit overlay handles its own keys.
   useEffect(() => {
-    function onKey(e: KeyboardEvent, held: boolean) {
-      if (e.code !== "Space") return;
-      const t = e.target as HTMLElement | null;
-      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
-      e.preventDefault();
-      setPanModifierHeld(held);
+    function isEditableTarget(target: EventTarget | null): boolean {
+      const el = target as HTMLElement | null;
+      if (!el) return false;
+      return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
     }
-    const down = (e: KeyboardEvent) => onKey(e, true);
-    const up = (e: KeyboardEvent) => onKey(e, false);
+
+    function down(e: KeyboardEvent) {
+      if (isEditableTarget(e.target)) return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        setPanModifierHeld(true);
+        return;
+      }
+      if (e.key === "Delete" || e.key === "Backspace") {
+        const { selection } = useEditorStore.getState();
+        if (selection.length > 0) {
+          e.preventDefault();
+          for (const id of selection) removeElement(id);
+        }
+        return;
+      }
+      if (e.key === "Escape") {
+        const { editingTextId, selection } = useEditorStore.getState();
+        if (editingTextId) {
+          // The text overlay listens for its own Esc; let it.
+          return;
+        }
+        if (selection.length > 0) {
+          e.preventDefault();
+          setSelection([]);
+        }
+      }
+    }
+
+    function up(e: KeyboardEvent) {
+      if (isEditableTarget(e.target)) return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        setPanModifierHeld(false);
+      }
+    }
+
+    const blur = () => setPanModifierHeld(false);
     window.addEventListener("keydown", down);
     window.addEventListener("keyup", up);
-    const blur = () => setPanModifierHeld(false);
     window.addEventListener("blur", blur);
     return () => {
       window.removeEventListener("keydown", down);
       window.removeEventListener("keyup", up);
       window.removeEventListener("blur", blur);
     };
-  }, [setPanModifierHeld]);
+  }, [setPanModifierHeld, removeElement, setSelection]);
 
   const handleFit = useCallback(() => {
     viewportHandleRef.current?.fitToViewport();
@@ -77,6 +113,8 @@ export function EditorShell({ projectId }: EditorShellProps) {
         </div>
         <InspectorPanel />
       </div>
+
+      <MobileInspectorSheet />
     </div>
   );
 }

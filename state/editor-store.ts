@@ -13,6 +13,8 @@ export type ToolMode = "select" | "text" | "image" | "shape";
 
 export type LoadStatus = "idle" | "loading" | "ready" | "missing" | "error";
 
+export type ZDir = "front" | "back" | "forward" | "backward";
+
 interface EditorState {
   // ── Document state ──────────────────────────────────────────────
   project: Project | null;
@@ -29,6 +31,9 @@ interface EditorState {
   // ── Editing (ephemeral) ─────────────────────────────────────────
   selection: string[];
   editingTextId: string | null;
+  /** World-space alignment-guide coords; rendered on the overlay layer. */
+  dragGuidesX: number[];
+  dragGuidesY: number[];
 
   // ── Document actions ────────────────────────────────────────────
   loadProject(id: string): Promise<void>;
@@ -39,6 +44,7 @@ interface EditorState {
   removeElement(id: string): void;
   setBackground(bg: Background): void;
   setProjectName(name: string): void;
+  reorderZ(id: string, direction: ZDir): void;
 
   // ── Viewport actions ────────────────────────────────────────────
   setView(transform: ViewTransform): void;
@@ -52,6 +58,8 @@ interface EditorState {
   // ── Editing actions ─────────────────────────────────────────────
   setSelection(ids: string[]): void;
   setEditingTextId(id: string | null): void;
+  setDragGuides(x: number[], y: number[]): void;
+  clearDragGuides(): void;
 }
 
 const INITIAL_VIEW: { scale: number; pan: Point } = {
@@ -71,6 +79,8 @@ export const useEditorStore = create<EditorState>((set, get) => ({
 
   selection: [],
   editingTextId: null,
+  dragGuidesX: [],
+  dragGuidesY: [],
 
   async loadProject(id) {
     set({ loadStatus: "loading", loadError: undefined });
@@ -157,6 +167,40 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     void persist(next);
   },
 
+  reorderZ(id, direction) {
+    const p = get().project;
+    if (!p) return;
+    const target = p.elements.find((e) => e.id === id);
+    if (!target) return;
+
+    const sorted = [...p.elements].sort((a, b) => a.z - b.z);
+    const idx = sorted.findIndex((e) => e.id === id);
+    if (idx < 0) return;
+
+    let next: Element[] | null = null;
+    if (direction === "front") {
+      const maxZ = sorted[sorted.length - 1]?.z ?? 0;
+      next = p.elements.map((e) => (e.id === id ? { ...e, z: maxZ + 1 } : e));
+    } else if (direction === "back") {
+      const minZ = sorted[0]?.z ?? 0;
+      next = p.elements.map((e) => (e.id === id ? { ...e, z: minZ - 1 } : e));
+    } else if (direction === "forward" && idx < sorted.length - 1) {
+      const above = sorted[idx + 1]!;
+      next = p.elements.map((e) =>
+        e.id === id ? { ...e, z: above.z } : e.id === above.id ? { ...e, z: target.z } : e,
+      );
+    } else if (direction === "backward" && idx > 0) {
+      const below = sorted[idx - 1]!;
+      next = p.elements.map((e) =>
+        e.id === id ? { ...e, z: below.z } : e.id === below.id ? { ...e, z: target.z } : e,
+      );
+    }
+    if (!next) return;
+    const project: Project = { ...p, elements: next, updatedAt: Date.now() };
+    set({ project });
+    void persist(project);
+  },
+
   setView({ scale, pan }) {
     set({ scale: clampZoom(scale, MIN_ZOOM, MAX_ZOOM), pan });
   },
@@ -183,7 +227,21 @@ export const useEditorStore = create<EditorState>((set, get) => ({
   setEditingTextId(id) {
     set({ editingTextId: id });
   },
+  setDragGuides(x, y) {
+    set({ dragGuidesX: x, dragGuidesY: y });
+  },
+  clearDragGuides() {
+    set({ dragGuidesX: [], dragGuidesY: [] });
+  },
 }));
+
+if (typeof window !== "undefined") {
+  // Debug + test hook. Exposes the Zustand store on `window` so
+  // Playwright can drive editor state without faking Konva canvas
+  // events, and so end users can poke at editor state from DevTools.
+  // Read-only intent — production code paths never read this back.
+  (window as unknown as Record<string, unknown>).__folioEditorStore = useEditorStore;
+}
 
 async function persist(project: Project): Promise<void> {
   try {

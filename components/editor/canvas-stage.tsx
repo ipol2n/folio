@@ -57,6 +57,8 @@ export function CanvasStage({ viewport }: CanvasStageProps) {
   );
 
   const setEditingTextId = useEditorStore((s) => s.setEditingTextId);
+  const setSelection = useEditorStore((s) => s.setSelection);
+
   const handleDblClick = useCallback(
     (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
       const id = e.target?.id?.();
@@ -65,6 +67,16 @@ export function CanvasStage({ viewport }: CanvasStageProps) {
       if (el?.kind === "text") setEditingTextId(id);
     },
     [setEditingTextId],
+  );
+
+  // Click empty stage (background layer) → clear selection.
+  const handleStageMouseDown = useCallback(
+    (e: Konva.KonvaEventObject<MouseEvent | TouchEvent>) => {
+      if (e.target === stageRef.current) {
+        setSelection([]);
+      }
+    },
+    [setSelection],
   );
 
   if (!project) return null;
@@ -93,6 +105,8 @@ export function CanvasStage({ viewport }: CanvasStageProps) {
       onDragEnd={handleDragEnd}
       onDblClick={handleDblClick}
       onDblTap={handleDblClick}
+      onMouseDown={handleStageMouseDown}
+      onTouchStart={handleStageMouseDown}
       style={{ cursor: draggable ? "grabbing" : "default" }}
     >
       <Layer listening={false}>
@@ -104,6 +118,7 @@ export function CanvasStage({ viewport }: CanvasStageProps) {
       <Layer listening={false}>
         <SlideBoundaries slideCount={project.slideCount} slideWidth={slideW} slideHeight={slideH} />
         <CanvasFrame width={totalW} height={slideH} />
+        <DragGuides slideHeight={slideH} totalWidth={totalW} />
       </Layer>
     </Stage>
   );
@@ -173,6 +188,36 @@ function BackgroundRect({
       fillLinearGradientEndPoint={gradient.end}
       fillLinearGradientColorStops={gradient.stops}
     />
+  );
+}
+
+function DragGuides({ slideHeight, totalWidth }: { slideHeight: number; totalWidth: number }) {
+  const guidesX = useEditorStore((s) => s.dragGuidesX);
+  const guidesY = useEditorStore((s) => s.dragGuidesY);
+  if (guidesX.length === 0 && guidesY.length === 0) return null;
+  return (
+    <>
+      {guidesX.map((x, i) => (
+        <Line
+          key={`gx-${i}`}
+          points={[x, 0, x, slideHeight]}
+          stroke="#B891F0"
+          strokeWidth={1}
+          dash={[6, 4]}
+          opacity={0.9}
+        />
+      ))}
+      {guidesY.map((y, i) => (
+        <Line
+          key={`gy-${i}`}
+          points={[0, y, totalWidth, y]}
+          stroke="#B891F0"
+          strokeWidth={1}
+          dash={[6, 4]}
+          opacity={0.9}
+        />
+      ))}
+    </>
   );
 }
 
