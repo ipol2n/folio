@@ -2,11 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Maximize2, Minus, Plus, Redo2, Undo2 } from "lucide-react";
+import { ArrowLeft, Download, Maximize2, Minus, Plus, Redo2, Undo2 } from "lucide-react";
 import { useEditorStore } from "@/state/editor-store";
 import { cn } from "@/lib/utils";
 import { clampZoom } from "@/lib/canvas/viewport-math";
 import { BackgroundButton } from "./background-button";
+import { ExportDialog } from "./export-dialog";
 
 interface TopBarProps {
   onFit: () => void;
@@ -18,6 +19,7 @@ export function TopBar({ onFit }: TopBarProps) {
   const scale = useEditorStore((s) => s.scale);
   const setScale = useEditorStore((s) => s.setScale);
   const saveStatus = useEditorStore((s) => s.saveStatus);
+  const [exportOpen, setExportOpen] = useState(false);
 
   const zoomPercent = Math.round(scale * 100);
 
@@ -91,7 +93,18 @@ export function TopBar({ onFit }: TopBarProps) {
         <IconButton label="Fit to viewport" onClick={onFit}>
           <Maximize2 aria-hidden className="h-4 w-4" />
         </IconButton>
+        <div className="mx-1 h-5 w-px bg-(--color-canvas-border)" aria-hidden />
+        <button
+          type="button"
+          onClick={() => setExportOpen(true)}
+          className="inline-flex items-center gap-1.5 rounded-md bg-(--color-accent) px-3 py-1.5 text-xs font-semibold text-(--color-accent-foreground) transition-colors hover:bg-(--color-accent-strong) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent)"
+        >
+          <Download aria-hidden className="h-3.5 w-3.5" />
+          Export
+        </button>
       </div>
+
+      <ExportDialog open={exportOpen} onOpenChange={setExportOpen} />
     </header>
   );
 }
