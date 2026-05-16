@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { PresetPicker } from "@/components/projects/preset-picker";
+import { TemplateGallery } from "@/components/projects/template-gallery";
 
 export const metadata: Metadata = {
   title: "New project",
@@ -27,7 +28,12 @@ export default function NewProjectPage() {
         </p>
       </header>
 
-      <PresetPicker />
+      <TemplateGallery />
+
+      <div className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold">Or start blank</h2>
+        <PresetPicker />
+      </div>
     </section>
   );
 }

@@ -1,13 +1,22 @@
 "use client";
 
 import * as Popover from "@radix-ui/react-popover";
-import { Circle, Image as ImageIcon, Minus, MousePointer, Square, Type } from "lucide-react";
+import {
+  Circle,
+  Image as ImageIcon,
+  Minus,
+  MousePointer,
+  Sparkles,
+  Square,
+  Type,
+} from "lucide-react";
 import { useRef, useState } from "react";
 import { useEditorStore, type ToolMode } from "@/state/editor-store";
 import { useAddElement } from "./use-add-element";
 import { IMAGE_INPUT_ACCEPT, ImageImportError } from "@/lib/canvas/image-import";
 import { useToast } from "@/components/providers/toast-provider";
 import { cn } from "@/lib/utils";
+import { TemplatesPopover } from "./templates-popover";
 
 export function SidebarRail() {
   const toolMode = useEditorStore((s) => s.toolMode);
@@ -115,6 +124,10 @@ export function SidebarRail() {
           </Popover.Content>
         </Popover.Portal>
       </Popover.Root>
+
+      <TemplatesPopover>
+        <ToolButton label="Templates" active={false} onClick={() => {}} Icon={Sparkles} />
+      </TemplatesPopover>
 
       <input
         ref={fileInputRef}

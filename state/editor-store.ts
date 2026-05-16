@@ -52,6 +52,10 @@ interface EditorState {
   setProjectName(name: string): void;
   reorderZ(id: string, direction: ZDir): void;
 
+  /** Replace the current project's elements + background with a
+   *  template. Keeps the project's id, name, presetId, and slideCount. */
+  applyTemplateElements(elements: Element[], background: Background): void;
+
   /** Replace the whole project — used by the auto-save controller
    *  after a thumbnail regenerates. Bypasses the dirty marker. */
   replaceProject(project: Project, options?: { markClean?: boolean }): void;
@@ -239,6 +243,17 @@ export const useEditorStore = create<EditorState>()(
         set({
           project,
           saveStatus: options?.markClean ? "saved" : get().saveStatus,
+        });
+      },
+
+      applyTemplateElements(elements, background) {
+        const p = get().project;
+        if (!p) return;
+        set({
+          project: { ...p, elements, background, updatedAt: Date.now() },
+          selection: [],
+          editingTextId: null,
+          saveStatus: "dirty",
         });
       },
 
