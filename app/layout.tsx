@@ -2,9 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { ToastProvider } from "@/components/providers/toast-provider";
 import { ThemeProvider } from "@/components/providers/theme-provider";
-import { SwRegister } from "@/components/pwa/sw-register";
-import { InstallPrompt } from "@/components/pwa/install-prompt";
-import { UpdateToast } from "@/components/pwa/update-toast";
+import { PwaRuntime } from "@/components/pwa/pwa-runtime";
 
 export const metadata: Metadata = {
   title: {
@@ -58,9 +56,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <ToastProvider>
             {children}
-            <UpdateToast />
-            <InstallPrompt />
-            <SwRegister />
+            <PwaRuntime />
           </ToastProvider>
         </ThemeProvider>
       </body>

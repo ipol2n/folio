@@ -8,8 +8,8 @@
   --color-canvas-border: oklch(0.32 0.015 280);
 
   --color-foreground: oklch(0.97 0.005 280);
-  --color-foreground-muted: oklch(0.75 0.01 280);
-  --color-foreground-subtle: oklch(0.55 0.012 280);
+  --color-foreground-muted: oklch(0.82 0.01 280);
+  --color-foreground-subtle: oklch(0.7 0.012 280);
 
   --color-accent: oklch(0.74 0.18 295);
   --color-accent-strong: oklch(0.68 0.2 295);
