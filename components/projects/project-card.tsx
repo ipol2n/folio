@@ -1,13 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { Copy, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 import type { ProjectSummary } from "@/lib/db/schema";
 import { getPreset, platformOf } from "@/lib/presets/presets";
 import { relativeTime } from "@/lib/format/relative-time";
+import { getPersistenceService } from "@/lib/persistence";
 import { cn } from "@/lib/utils";
 
 interface ProjectCardProps {
@@ -34,7 +35,7 @@ export function ProjectCard({ project, onRename, onDuplicate, onDelete }: Projec
         aria-label={`Open ${project.name}`}
         className="flex flex-col gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-accent)"
       >
-        <ThumbPlaceholder aspect={preset.aspect} />
+        <Thumbnail aspect={preset.aspect} assetKey={project.thumbnailKey} />
         <div className="flex flex-col gap-1">
           <h3 className="text-foreground text-sm font-semibold">{project.name}</h3>
           <p className="text-xs text-(--color-foreground-subtle)">
@@ -103,14 +104,40 @@ export function ProjectCard({ project, onRename, onDuplicate, onDelete }: Projec
   );
 }
 
-function ThumbPlaceholder({ aspect }: { aspect: { w: number; h: number } }) {
+function Thumbnail({ aspect, assetKey }: { aspect: { w: number; h: number }; assetKey?: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!assetKey) return;
+    let cancelled = false;
+    let createdUrl: string | null = null;
+    (async () => {
+      const asset = await getPersistenceService().getAsset(assetKey);
+      if (cancelled || !asset) return;
+      createdUrl = URL.createObjectURL(asset.blob);
+      setUrl(createdUrl);
+    })();
+    return () => {
+      cancelled = true;
+      if (createdUrl) URL.revokeObjectURL(createdUrl);
+      setUrl(null);
+    };
+  }, [assetKey]);
+
   return (
     <div
-      className="flex w-full items-center justify-center rounded-md border border-(--color-canvas-border) bg-(--color-canvas-bg)"
+      className="flex w-full items-center justify-center overflow-hidden rounded-md border border-(--color-canvas-border) bg-(--color-canvas-bg)"
       style={{ aspectRatio: `${aspect.w} / ${aspect.h}` }}
       aria-hidden
     >
-      <span className="text-xs text-(--color-foreground-subtle)">No preview yet</span>
+      {url ? (
+        // eslint-disable-next-line @next/next/no-img-element -- blob URL, Next/Image not applicable
+        <img src={url} alt="" className="h-full w-full object-cover" />
+      ) : (
+        <span className="text-xs text-(--color-foreground-subtle)">
+          {assetKey ? "Loading…" : "No preview yet"}
+        </span>
+      )}
     </div>
   );
 }

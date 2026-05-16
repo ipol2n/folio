@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { setCurrentStage } from "@/lib/canvas/stage-handle";
 import type Konva from "konva";
 import { Layer, Line, Rect, Stage } from "react-konva";
 import type { Background } from "@/lib/db/schema";
@@ -26,6 +27,13 @@ export function CanvasStage({ viewport }: CanvasStageProps) {
   const setView = useEditorStore((s) => s.setView);
   const setPan = useEditorStore((s) => s.setPan);
   const isPanModifierHeld = useEditorStore((s) => s.isPanModifierHeld);
+
+  // Register this Stage as the editor's active one so off-tree
+  // consumers (auto-save thumbnail renderer) can reach it.
+  useEffect(() => {
+    setCurrentStage(stageRef.current);
+    return () => setCurrentStage(null);
+  }, []);
 
   const handleWheel = useCallback(
     (e: Konva.KonvaEventObject<WheelEvent>) => {

@@ -45,16 +45,19 @@ export function MobileInspectorSheet() {
         <Dialog.Overlay className="fixed inset-0 z-40 bg-transparent" />
         <Dialog.Content
           aria-describedby={undefined}
-          className="bg-(--color-canvas-surface) border-(--color-canvas-border) data-[state=closed]:animate-out data-[state=open]:animate-in fixed inset-x-0 bottom-0 z-50 flex max-h-[60vh] flex-col gap-3 overflow-y-auto rounded-t-2xl border-t p-4 shadow-2xl"
+          className="data-[state=closed]:animate-out data-[state=open]:animate-in fixed inset-x-0 bottom-0 z-50 flex max-h-[60vh] flex-col gap-3 overflow-y-auto rounded-t-2xl border-t border-(--color-canvas-border) bg-(--color-canvas-surface) p-4 shadow-2xl"
         >
           <Dialog.Title className="sr-only">Inspector</Dialog.Title>
-          <div className="bg-(--color-canvas-border) mx-auto h-1 w-10 shrink-0 rounded-full" aria-hidden />
+          <div
+            className="mx-auto h-1 w-10 shrink-0 rounded-full bg-(--color-canvas-border)"
+            aria-hidden
+          />
           <InspectorBody />
           <Dialog.Close asChild>
             <button
               type="button"
               aria-label="Close inspector"
-              className="text-(--color-foreground-muted) hover:bg-(--color-canvas-elevated) absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-md"
+              className="absolute top-2 right-2 flex h-8 w-8 items-center justify-center rounded-md text-(--color-foreground-muted) hover:bg-(--color-canvas-elevated)"
             >
               <X aria-hidden className="h-4 w-4" />
             </button>

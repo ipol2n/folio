@@ -11,6 +11,7 @@ import { SidebarRail } from "./sidebar-rail";
 import { InspectorPanel } from "./inspector-panel";
 import { MobileInspectorSheet } from "./mobile-inspector-sheet";
 import { SlideStrip } from "./slide-strip";
+import { AutoSave } from "./auto-save";
 
 interface EditorShellProps {
   projectId: string;
@@ -58,6 +59,22 @@ export function EditorShell({ projectId }: EditorShellProps) {
           e.preventDefault();
           for (const id of selection) removeElement(id);
         }
+        return;
+      }
+      // Undo / Redo. Cmd/Ctrl+Z = undo; Cmd/Ctrl+Shift+Z or Cmd/Ctrl+Y = redo.
+      if ((e.metaKey || e.ctrlKey) && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault();
+        const temporal = useEditorStore.temporal.getState();
+        if (e.shiftKey) {
+          temporal.redo();
+        } else {
+          temporal.undo();
+        }
+        return;
+      }
+      if ((e.metaKey || e.ctrlKey) && (e.key === "y" || e.key === "Y")) {
+        e.preventDefault();
+        useEditorStore.temporal.getState().redo();
         return;
       }
       if (e.key === "Escape") {
@@ -115,6 +132,7 @@ export function EditorShell({ projectId }: EditorShellProps) {
       </div>
 
       <MobileInspectorSheet />
+      <AutoSave />
     </div>
   );
 }

@@ -15,9 +15,7 @@ test.describe("selection + inspector", () => {
 
   test("inspector edits the selected text element", async ({ page }) => {
     await page.goto("/new");
-    await page
-      .getByRole("button", { name: /create instagram carousel — square project/i })
-      .click();
+    await page.getByRole("button", { name: /create instagram carousel — square project/i }).click();
     await expect(page).toHaveURL(/\/editor\/[0-9a-f-]+/i);
     await expect(page.getByRole("button", { name: /fit to viewport/i })).toBeVisible();
 
@@ -75,9 +73,7 @@ test.describe("selection + inspector", () => {
     // Delete shortcut clears the element.
     await page.locator("body").click();
     await page.keyboard.press("Delete");
-    await expect(
-      page.getByText(/select an element to edit its properties/i),
-    ).toBeVisible();
+    await expect(page.getByText(/select an element to edit its properties/i)).toBeVisible();
 
     // Cleanup.
     await page.goto("/");
